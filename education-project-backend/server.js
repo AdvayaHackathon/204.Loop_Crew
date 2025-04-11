@@ -174,7 +174,7 @@ app.get("/api/classes/list", async (req, res) => {
 
   
 
-  
+
 // ✅ Get students for a specific class
 app.get("/api/classes/:classId/students", async (req, res) => {
     const { classId } = req.params;
@@ -196,6 +196,9 @@ app.get("/api/classes/:classId/students", async (req, res) => {
       res.status(500).json({ message: "Failed to fetch students" });
     }
   });
+
+
+  
     
 
 // ✅ Start Server
