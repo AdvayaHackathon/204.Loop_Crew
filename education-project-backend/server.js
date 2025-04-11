@@ -134,6 +134,70 @@ app.post("/api/classes/:classId/students", async (req, res) => {
 });
 
 // ------------------------------------------
+
+
+app.get("/api/classes", async (req, res) => {
+  try {
+    const result = await db.pool.query("SELECT Class_id, Class_username FROM Class");
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching class list:", error);
+    res.status(500).json({ message: "Failed to fetch classes" });
+  }
+});
+
+app.get("/api/classes/list", async (req, res) => {
+    try {
+      const result = await db.pool.query("SELECT class_id, class_username FROM class");
+      res.status(200).json(result.rows);
+    } catch (error) {
+      console.error("Error fetching class list:", error);
+      res.status(500).json({ message: "Failed to fetch classes" });
+    }
+  });
+
+
+  // ✅ Get list of all classes (id + name only) - used for dropdown/list
+app.get("/api/classes/list", async (req, res) => {
+    try {
+      const result = await db.pool.query("SELECT class_id, class_username FROM class");
+      const classes = result.rows.map(row => ({
+        _id: row.class_id,
+        name: row.class_username,
+      }));
+      res.status(200).json(classes);
+    } catch (err) {
+      console.error("Error fetching class list:", err);
+      res.status(500).json({ message: "Failed to fetch classes" });
+    }
+  });
+
+  
+
+  
+// ✅ Get students for a specific class
+app.get("/api/classes/:classId/students", async (req, res) => {
+    const { classId } = req.params;
+  
+    try {
+      const result = await db.pool.query(
+        "SELECT student_name, student_phnum FROM student WHERE class_id = $1",
+        [classId]
+      );
+  
+      const students = result.rows.map(row => ({
+        name: row.student_name,
+        phone: row.student_phnum,
+      }));
+  
+      res.status(200).json(students);
+    } catch (err) {
+      console.error("Error fetching students for class:", err);
+      res.status(500).json({ message: "Failed to fetch students" });
+    }
+  });
+    
+
 // ✅ Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
