@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Classes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .hidden { display: none; }
+    .class-card { margin-bottom: 20px; cursor: pointer; transition: transform 0.2s; }
+    .class-card:hover { transform: scale(1.02); }
+    .modal-content { padding: 20px; }
+    .student-list { max-height: 300px; overflow-y: auto; }
+  </style>
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+  <h2 class="mb-4">Manage Classes</h2>
+
+  <!-- CREATE CLASS -->
+  <div class="mb-4">
+    <button class="btn btn-primary" id="createToggle">+ Create New Class</button>
+  </div>
+
+  <div id="createClassForm" class="border p-4 mb-4 bg-white rounded hidden">
+    <h5 class="mb-3">New Class Details</h5>
+    <div class="mb-3">
+      <label for="newClassName" class="form-label">Class Username</label>
+      <input type="text" class="form-control" id="newClassName" placeholder="Enter username" required>
+    </div>
+    <div class="mb-3">
+      <label for="pdfUpload" class="form-label">Upload PDF</label>
+      <input type="file" class="form-control" id="pdfUpload" accept=".pdf" required>
+      <div class="form-text">Max file size: 5MB</div>
+    </div>
+    <button class="btn btn-success me-2" id="createSubmit">Create Class</button>
+    <button class="btn btn-secondary" id="cancelCreate">Cancel</button>
+  </div>
+
+  <!-- EXISTING CLASSES -->
+  <div id="classList" class="row"></div>
+</div>
+
+<!-- Class Details Modal -->
+<div class="modal fade" id="classModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Class Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>PDF:</strong> <span id="modalPdfName"></span></p>
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-info" id="viewList">View Student List</button>
+          <button class="btn btn-primary" id="insertStudent">Add Student</button>
+        </div>
+        <div id="studentListContainer" class="hidden">
+          <h6>Students</h6>
+          <div class="student-list border p-2 mb-3" id="studentList"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="studentName" class="form-label">Name</label>
+          <input type="text" class="form-control" id="studentName" placeholder="Student name" required>
+        </div>
+        <div class="mb-3">
+          <label for="studentPhone" class="form-label">Phone</label>
+          <input type="tel" class="form-control" id="studentPhone" placeholder="Phone number" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveStudent">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Initialize classes from localStorage or empty array
+  let classes = JSON.parse(localStorage.getItem('classes')) || [];
+  let currentClassId = null;
+  const classModal = new bootstrap.Modal(document.getElementById('classModal'));
+  const studentModal = new bootstrap.Modal(document.getElementById('studentModal'));
+
+  // DOM elements
+  const createToggle = document.getElementById("createToggle");
+  const createClassForm = document.getElementById("createClassForm");
+  const newClassName = document.getElementById("newClassName");
+  const pdfUpload = document.getElementById("pdfUpload");
+  const createSubmit = document.getElementById("createSubmit");
+  const cancelCreate = document.getElementById("cancelCreate");
+  const classList = document.getElementById("classList");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalPdfName = document.getElementById("modalPdfName");
+  const viewList = document.getElementById("viewList");
+  const insertStudent = document.getElementById("insertStudent");
+  const studentListContainer = document.getElementById("studentListContainer");
+  const studentList = document.getElementById("studentList");
+  const studentName = document.getElementById("studentName");
+  const studentPhone = document.getElementById("studentPhone");
+  const saveStudent = document.getElementById("saveStudent");
+
+  // Event listeners
+  createToggle.addEventListener("click", () => {
+    createClassForm.classList.toggle("hidden");
+  });
+
+  cancelCreate.addEventListener("click", () => {
+    createClassForm.classList.add("hidden");
+    newClassName.value = "";
+    pdfUpload.value = "";
+  });
+
+  createSubmit.addEventListener("click", createClass);
+  viewList.addEventListener("click", showStudentList);
+  insertStudent.addEventListener("click", () => studentModal.show());
+  saveStudent.addEventListener("click", addStudent);
+
+  // Initialize the page
+  renderClasses();
+
+  function createClass() {
+    const name = newClassName.value.trim();
+    const pdf = pdfUpload.files[0];
+
+    if (!name) {
+      alert("Please enter a class username");
+      return;
+    }
+
+    if (!pdf) {
+      alert("Please upload a PDF file");
+      return;
+    }
+
+    if (pdf.size > 5 * 1024 * 1024) {
+      alert("PDF file too large (max 5MB)");
+      return;
+    }
+
+    if (classes.some(c => c.username === name)) {
+      alert("Username already exists");
+      return;
+    }
+
+    const classObj = {
+      id: Date.now().toString(),
+      username: name,
+      pdfName: pdf.name,
+      students: []
+    };
+
+    classes.push(classObj);
+    saveClasses();
+    
+    newClassName.value = "";
+    pdfUpload.value = "";
+    createClassForm.classList.add("hidden");
+    
+    renderClasses();
+  }
+
+  function renderClasses() {
+    classList.innerHTML = "";
+
+    if (classes.length === 0) {
+      classList.innerHTML = '<div class="col-12"><p class="text-muted">No classes created yet.</p></div>';
+      return;
+    }
+
+    classes.forEach(cls => {
+      const div = document.createElement("div");
+      div.className = "col-md-6 col-lg-4";
+      div.innerHTML = `
+        <div class="card class-card">
+          <div class="card-body">
+            <h5 class="card-title">${cls.username}</h5>
+            <p class="card-text"><small class="text-muted">${cls.pdfName}</small></p>
+            <p class="card-text"><small>Students: ${cls.students.length}</small></p>
+          </div>
+        </div>
+      `;
+      div.querySelector('.card').onclick = () => openClassDetails(cls.id);
+      classList.appendChild(div);
+    });
+  }
+
+  function openClassDetails(classId) {
+    currentClassId = classId;
+    const cls = classes.find(c => c.id === classId);
+    
+    modalTitle.textContent = cls.username;
+    modalPdfName.textContent = cls.pdfName;
+    studentListContainer.classList.add("hidden");
+    
+    classModal.show();
+  }
+
+  function showStudentList() {
+    const cls = classes.find(c => c.id === currentClassId);
+    studentList.innerHTML = cls.students.length 
+      ? cls.students.map(s => `<div class="mb-2 p-2 border-bottom"><strong>${s.name}</strong><br>${s.phone}</div>`).join("")
+      : '<p class="text-muted">No students added yet.</p>';
+    
+    studentListContainer.classList.toggle("hidden");
+  }
+
+  function addStudent() {
+    const name = studentName.value.trim();
+    const phone = studentPhone.value.trim();
+
+    if (!name || !phone) {
+      alert("Please enter both name and phone");
+      return;
+    }
+
+    const cls = classes.find(c => c.id === currentClassId);
+    cls.students.push({ name, phone });
+    saveClasses();
+    
+    studentName.value = "";
+    studentPhone.value = "";
+    studentModal.hide();
+    
+    // Refresh the student list if it's visible
+    if (!studentListContainer.classList.contains("hidden")) {
+      showStudentList();
+    }
+  }
+
+  function saveClasses() {
+    localStorage.setItem('classes', JSON.stringify(classes));
+  }
+</script>
+</body>
+</html>
