@@ -1,9 +1,12 @@
+require("dotenv").config({ path: ".env.local" });
 const express = require('express');
 const { VoiceResponse } = require('twilio').twiml;
-const db = require('./db/progress'); // Your progress functions
+const { RuralDatabase } = require("./db.js"); // Your progress functions
 
 const app = express();
 const port = process.env.PORT2;
+const db = new RuralDatabase(process.env.NEON_LINK);
+db.connectDb();
 app.use(express.urlencoded({ extended: false }));
 
 app.post('/call-status', async (req, res) => {
