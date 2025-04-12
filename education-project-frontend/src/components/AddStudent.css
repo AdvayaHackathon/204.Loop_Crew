@@ -1,0 +1,49 @@
+.form-container {
+    max-width: 500px;
+    margin: 60px auto;
+    padding: 30px 40px;
+    background: #ffffff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .form-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+  }
+  
+  form input,
+  form select {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: border 0.3s ease;
+  }
+  
+  form input:focus,
+  form select:focus {
+    border-color: #4b91f1;
+    outline: none;
+  }
+  
+  form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #4b91f1;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  form button:hover {
+    background-color: #336ed0;
+  }
+  
